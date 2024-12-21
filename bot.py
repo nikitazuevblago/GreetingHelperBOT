@@ -12,6 +12,7 @@ import os
 import textwrap
 from db_interaction import *
 from custom_logging import logger
+import user_account
 
 
 load_dotenv()
@@ -27,6 +28,8 @@ class Form(StatesGroup):
     holiday_date = State()
     holiday_users = State()
     holiday_text = State()
+    phone_number = State()
+    otp_code = State()
 
 
 # Bot commands setup
@@ -52,7 +55,11 @@ async def start(message: Message) -> None:
     await message.reply(msg)
 
 
-# Register user account in DB for sending greeting messages
+
+
+
+
+
 @dp.message(Command("register"))
 async def register(message: Message, state: FSMContext) -> None:
     logger.info(f"User {message.from_user.id} triggered /register command.")
@@ -66,27 +73,78 @@ async def register(message: Message, state: FSMContext) -> None:
     "   - 🔑 <b>API Hash</b>\n\n"
     "📥 <b>Please send me the credentials</b> in this format:\n"
     "<b>API_ID API_HASH</b> (separated by a space).\n\n"
-    "Thank you! 😊"))
-
-
+    ))
     await message.reply(msg)
     await state.set_state(Form.tg_credentials)
 
 
 @dp.message(Form.tg_credentials)
-async def register(message: Message, state: FSMContext) -> None:
+async def request_phone_number(message: Message, state: FSMContext) -> None:
     logger.info(f"User {message.from_user.id} sent tg_credentials")
     try:
         api_id, api_hash = message.text.split()
         api_id = int(api_id)
-        add_user_DB(message.from_user.id, api_id, api_hash)
+        await state.update_data(api_id=api_id, api_hash=api_hash)
+        await message.reply("Great! Now, please send me your phone number (with country code, e.g., +123456789).")
+        await state.set_state(Form.phone_number)
+    except Exception as e:
+        logger.error(f"User {message.from_user.id} entered invalid credentials. {e}")
+        await message.reply("Try again, use space as separator and enter API_ID as number!")
+        await state.set_state(Form.tg_credentials)
+
+
+@dp.message(Form.phone_number)
+async def request_otp(message: Message, state: FSMContext) -> None:
+    logger.info(f"User {message.from_user.id} sent phone number")
+    try:
+        phone_number = message.text
+        await state.update_data(phone_number=phone_number)
+        await message.reply("Thanks! Now, please send the OTP code you received.")
+        await state.set_state(Form.otp_code)
+    except Exception as e:
+        logger.error(f"Error while receiving phone number from User {message.from_user.id}. {e}")
+        await message.reply("Invalid phone number format. Please try again!")
+        await state.set_state(Form.phone_number)
+
+
+@dp.message(Form.otp_code)
+async def register_user(message: Message, state: FSMContext) -> None:
+    logger.info(f"User {message.from_user.id} sent OTP code")
+    try:
+        otp_code = message.text
+        data = await state.get_data()
+        api_id = data.get("api_id")
+        api_hash = data.get("api_hash")
+        phone_number = data.get("phone_number")
+        
+        # Check if the user already exists
+        users_rows = get_all_users_DB()
+        registered_tg_ids = [row[1] for row in users_rows]
+        if message.from_user.id in registered_tg_ids:
+            logger.info(f"User {message.from_user.id} is being re-registered.")
+            remove_user_DB(message.from_user.id)
+        
+        # Save user data in DB
+        add_user_DB(message.from_user.id, api_id, api_hash, phone_number)
         logger.info(f"User {message.from_user.id} registered successfully.")
-        await message.answer("You have been registered successfully!")
+        await message.reply(
+            "You have been registered successfully! "
+            "As a test, 'Hello!' will be sent to @BotFather from your account. "
+            "If the message hasn't been sent, "
+            "please check your credentials and try registering again."
+        )
+        # Send a test message to @BotFather
+        try:
+            await user_account.main("@BotFather", "Hello!", api_id, api_hash)
+        except Exception as e:
+            logger.error(f"An error occurred while sending a test message to @BotFather: {e}")
+            await message.reply("An error occurred while sending a test message to @BotFather. Please try again later.")
+
         # Reset the state after successful registration
         await state.clear()
-    except:
-        logger.error(f"User {message.from_user.id} entered invalid credentials.")
-        await message.answer(f"Try again, use space as separator and enter API_ID as number!")
+    except Exception as e:
+        logger.error(f"User {message.from_user.id} encountered an error. {e}")
+        await message.reply("Something went wrong! Please try again.")
         await state.set_state(Form.tg_credentials)
 
 
@@ -96,6 +154,13 @@ async def register(message: Message, state: FSMContext) -> None:
 # Start the /add_holiday process
 @dp.message(Command("add_holiday"))
 async def add_holiday_start(message: Message, state: FSMContext):
+    # Add register check here
+    users_rows = get_all_users_DB()
+    registered_tg_ids = [row[1] for row in users_rows]
+    if message.from_user.id not in registered_tg_ids:
+        await message.reply("❌ You need to register your account first with /register.")
+        return
+
     await message.reply(
         "🎉 <b>Let's add a new holiday!</b>\n\n"
         "Please enter the <b>name of the holiday</b> (e.g., International Friendship Day):",
@@ -200,9 +265,6 @@ async def get_holiday_users(message: Message, state: FSMContext):
 async def cancel_process(message: Message, state: FSMContext):
     await state.clear()  # Clear any ongoing FSM process
     await message.reply("❌ <b>Process canceled!</b> You can start again with /add_holiday.", parse_mode="HTML")
-
-
-
 
 
 

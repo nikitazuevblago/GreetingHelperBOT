@@ -36,9 +36,11 @@ def create_tables_DB():
         logger.info("Creating table USERS...")
         cursor.execute("""
             CREATE TABLE USERS (
+                id SERIAL PRIMARY KEY,
                 TELEGRAM_ID BIGINT UNIQUE,
                 API_ID BIGINT,
-                API_HASH TEXT
+                API_HASH TEXT,
+                phone_number TEXT
             );
         """)
         logger.info("Table USERS created successfully.")
@@ -48,6 +50,7 @@ def create_tables_DB():
         logger.info("Creating table HOLIDAYS...")
         cursor.execute("""
             CREATE TABLE holidays (
+                id SERIAL PRIMARY KEY,
                 TELEGRAM_ID BIGINT PRIMARY KEY,
                 name TEXT NOT NULL,
                 day INT NOT NULL CHECK (day BETWEEN 1 AND 31),
@@ -101,7 +104,7 @@ def drop_tables_DB():
         connection.close()
 
 
-def add_user_DB(telegram_id, api_id, api_hash):
+def add_user_DB(telegram_id, api_id, api_hash, phone_number):
     logger.info(f"Adding user {telegram_id} to USERS table...")
     connection = pg2.connect(
         user=os.getenv("DB_USER"),
@@ -115,9 +118,9 @@ def add_user_DB(telegram_id, api_id, api_hash):
     try:
         cursor = connection.cursor()
         cursor.execute(f"""
-            INSERT INTO USERS (TELEGRAM_ID, API_ID, API_HASH)
-            VALUES ({telegram_id}, {api_id}, '{api_hash}');
-        """)
+            INSERT INTO USERS (TELEGRAM_ID, API_ID, API_HASH, phone_number)
+            VALUES (%s, %s, %s, %s);
+        """, (telegram_id, api_id, api_hash, phone_number))
         connection.commit()
         logger.info(f"User {telegram_id} added successfully.")
 
@@ -180,61 +183,61 @@ def add_holiday_DB(telegram_id, name, day, month, users, text):
         logger.info("Database connection closed after adding holiday.")
 
 
-# def remove_user_DB(telegram_id):
-#     logger.info(f"Removing user {telegram_id} from USERS table...")
-#     connection = pg2.connect(
-#         user=os.getenv("DB_USER"),
-#         password=os.getenv("DB_PASSWORD"),
-#         host=os.getenv("DB_HOST"),
-#         port=os.getenv("DB_PORT"),
-#         database=os.getenv("DB_DATABASE")
-#     )
-#     logger.info("Database connection established for removing user.")
+def remove_user_DB(telegram_id):
+    logger.info(f"Removing user {telegram_id} from USERS table...")
+    connection = pg2.connect(
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        database=os.getenv("DB_DATABASE")
+    )
+    logger.info("Database connection established for removing user.")
 
-#     try:
-#         cursor = connection.cursor()
-#         cursor.execute(f"""
-#             DELETE FROM USERS
-#             WHERE TELEGRAM_ID = {telegram_id};
-#         """)
-#         connection.commit()
-#         logger.info(f"User {telegram_id} removed successfully.")
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"""
+            DELETE FROM USERS
+            WHERE TELEGRAM_ID = {telegram_id};
+        """)
+        connection.commit()
+        logger.info(f"User {telegram_id} removed successfully.")
 
-#     except Exception as e:
-#         logger.error(f"An error occurred: {e}")
-#         if connection:
-#             connection.rollback()  # Rollback transaction in case of an error
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        if connection:
+            connection.rollback()  # Rollback transaction in case of an error
 
-#     finally:
-#         cursor.close()
-#         connection.close()
-#         logger.info("Database connection closed after removing user.")
+    finally:
+        cursor.close()
+        connection.close()
+        logger.info("Database connection closed after removing user.")
 
 
-# def get_all_users_DB():
-#     logger.info("Fetching all users from USERS table...")
-#     connection = pg2.connect(
-#         user=os.getenv("DB_USER"),
-#         password=os.getenv("DB_PASSWORD"),
-#         host=os.getenv("DB_HOST"),
-#         port=os.getenv("DB_PORT"),
-#         database=os.getenv("DB_DATABASE")
-#     )
-#     logger.info("Database connection established for fetching users.")
+def get_all_users_DB():
+    logger.info("Fetching all users from USERS table...")
+    connection = pg2.connect(
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        database=os.getenv("DB_DATABASE")
+    )
+    logger.info("Database connection established for fetching users.")
 
-#     try:
-#         cursor = connection.cursor()
-#         cursor.execute("SELECT * FROM USERS;")
-#         records = cursor.fetchall()
-#         logger.info(f"Fetched {len(records)} users.")
-#         return records
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM USERS;")
+        records = cursor.fetchall()
+        logger.info(f"Fetched {len(records)} users.")
+        return records
 
-#     except Exception as error:
-#         logger.error(f"An error occurred while fetching users: {error}")
-#         if connection:
-#             connection.rollback()
+    except Exception as error:
+        logger.error(f"An error occurred while fetching users: {error}")
+        if connection:
+            connection.rollback()
 
-#     finally:
-#         cursor.close()
-#         connection.close()
-#         logger.info("Database connection closed after fetching users.")
+    finally:
+        cursor.close()
+        connection.close()
+        logger.info("Database connection closed after fetching users.")
