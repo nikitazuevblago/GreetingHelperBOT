@@ -84,7 +84,8 @@ async def request_phone_number(message: Message, state: FSMContext) -> None:
     try:
         api_id, api_hash = message.text.split()
         api_id = int(api_id)
-        await state.update_data(api_id=api_id, api_hash=api_hash)
+        userpyrogram = user_account.UserPyrogram(api_id, api_hash, message.from_user.id)
+        await state.update_data(api_id=api_id, api_hash=api_hash, userpyrogram=userpyrogram)
         await message.reply("Great! Now, please send me your phone number (with country code, e.g., +123456789).")
         await state.set_state(Form.phone_number)
     except Exception as e:
@@ -98,7 +99,11 @@ async def request_otp(message: Message, state: FSMContext) -> None:
     logger.info(f"User {message.from_user.id} sent phone number")
     try:
         phone_number = message.text
-        await state.update_data(phone_number=phone_number)
+        data = await state.get_data()
+        userpyrogram = data.get("userpyrogram")
+        await userpyrogram.request_code(phone_number)
+        print('Code requested')
+        await state.update_data(phone_number=phone_number, userpyrogram=userpyrogram)
         await message.reply("Thanks! Now, please send the OTP code you received.")
         await state.set_state(Form.otp_code)
     except Exception as e:
@@ -116,6 +121,7 @@ async def register_user(message: Message, state: FSMContext) -> None:
         api_id = data.get("api_id")
         api_hash = data.get("api_hash")
         phone_number = data.get("phone_number")
+        userpyrogram = data.get("userpyrogram")
         
         # Check if the user already exists
         users_rows = get_all_users_DB()
@@ -135,7 +141,8 @@ async def register_user(message: Message, state: FSMContext) -> None:
         )
         # Send a test message to @BotFather
         try:
-            await user_account.main("@BotFather", "Hello!", api_id, api_hash)
+            await userpyrogram.enter_code(otp_code)
+            await userpyrogram.send_msg("@BotFather", "Hello!")
         except Exception as e:
             logger.error(f"An error occurred while sending a test message to @BotFather: {e}")
             await message.reply("An error occurred while sending a test message to @BotFather. Please try again later.")

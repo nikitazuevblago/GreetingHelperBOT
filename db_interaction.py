@@ -51,7 +51,7 @@ def create_tables_DB():
         cursor.execute("""
             CREATE TABLE holidays (
                 id SERIAL PRIMARY KEY,
-                TELEGRAM_ID BIGINT PRIMARY KEY,
+                TELEGRAM_ID BIGINT,
                 name TEXT NOT NULL,
                 day INT NOT NULL CHECK (day BETWEEN 1 AND 31),
                 month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
