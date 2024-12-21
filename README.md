@@ -1,11 +1,14 @@
 # GreetingHelperBOT
 
 ## Intro
-Telegram community in Johannes Kepler University is pretty big but there is nothing software oriented in this media created. I know that a lot of people would prefer get notifications about their classes in their mostly used app, so that's why I created it. At 12 am it notifies students about today's classes.
+Used it because I'm tired of sending the same "Happy new year" to all of the friends/relatives and sometimes I even forget about it. That's why this bot helps you to configure the mailing for custom holidays.
 
 ## Deployment 
 Digital Ocean Droplet - postgreSQL and telegram bot as docker images.
-Check it out in telegram - @JKUClassNotifierBOT
+Check it out in telegram - @GreetingHelperBOT
+
+### docker command:
+docker run -d --name greetinghelperbot --restart=always -e TZ="CET" ghcr.io/nikitazuevblago/greetinghelperbot:latest
 
 ## Installation and Setup 
 ```bash
