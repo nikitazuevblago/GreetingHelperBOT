@@ -1,0 +1,4 @@
+aiogram
+pyrogram
+psycopg2-binary
+python-dotenv

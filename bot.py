@@ -59,9 +59,11 @@ async def cancel_process(message: Message, state: FSMContext):
 async def start(message: Message) -> None:
     logger.info(f"User triggered /start command.")
     msg = textwrap.dedent((
-        "🎉 Hi there! I’m your friendly bot 🤖, here to make your life easier by "
-        "sending heartfelt holiday greetings directly from your account. Let me "
-        "help you spread joy and celebrate all the special moments! 🥳🎁"))
+    "🎉 Hi there! I’m your friendly bot 🤖, here to make your life easier by "
+    "sending heartfelt holiday greetings directly from your account. Let me "
+    "help you spread joy and celebrate all the special moments! 🥳🎁\n"
+    "<i>P.S. The mailing will be scheduled for 10 AM</i>"))
+
     await message.reply(msg)
 
 
@@ -177,7 +179,7 @@ async def send_holiday_greetings():
             if not os.getenv("IS_TEST"):
                 target_time = datetime.combine(now.date(), time(10, 0))
             else:
-                target_time = now + timedelta(seconds=30)
+                target_time = now + timedelta(seconds=60)
 
             # If it's already past 10:00 AM, target the next day
             if now >= target_time:
@@ -239,7 +241,7 @@ async def remove_holiday_command(message: Message):
             text=f"❌ {holiday['name']} ({holiday['day']}/{holiday['month']})",
             callback_data=f"toggle_holiday:{holiday['id']}"  # Use holiday ID
         )
-    builder.button(text="✅ Confirm Deletion", callback_data="confirm_deletion")
+    builder.button(text="✅ Confirm Deletion", callback_data="confirm_deletion:")
     builder.adjust(1)  # One button per row
 
     # Attach a temporary storage attribute to the message for selections
@@ -261,7 +263,7 @@ async def handle_holiday_deletion(callback: CallbackQuery):
         # Reconstruct the current selection based on IDs in the button text
         selected_ids = set()
         for button in callback.message.reply_markup.inline_keyboard:
-            if button[0].text.startswith("✅"):
+            if button[0].text.startswith("✅") and button[0].callback_data.startswith("toggle_holiday:"):
                 selected_ids.add(int(button[0].callback_data.split(":")[1]))
 
         # Toggle the current holiday's selection state
@@ -293,17 +295,16 @@ async def handle_holiday_deletion(callback: CallbackQuery):
         # Extract selected IDs from callback data
         selected_ids = callback.data[len("confirm_deletion:"):].split(",")
         selected_ids = list(map(int, selected_ids)) if selected_ids != [""] else []
-
         if not selected_ids:
             await callback.answer("No holidays selected to delete.")
             return
-
+        holiday_rows = fetch_all_holidays_DB()
+        holiday_names = [row['name'] for row in holiday_rows if row['id'] in selected_ids]
         # Perform deletion for each selected holiday
         for holiday_id in selected_ids:
             remove_holiday_DB(holiday_id)
-
         await callback.message.edit_text(
-            f"Successfully removed the selected holidays: {', '.join(map(str, selected_ids))}"
+            f"Successfully removed the selected holidays: {', '.join(holiday_names)}"
         )
         await callback.answer("Holidays removed.")
 

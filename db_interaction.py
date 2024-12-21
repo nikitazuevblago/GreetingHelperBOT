@@ -130,11 +130,11 @@ def add_holiday_DB(name, day, month, users, text):
         logger.info("Database connection closed after adding holiday.")
 
 
-def remove_holiday_DB(name):
+def remove_holiday_DB(holiday_id):
     """
     Remove a holiday from the HOLIDAYS table by its name.
     """
-    logger.info(f"Removing holiday '{name}' from HOLIDAYS table...")
+    logger.info(f"Removing holiday '{holiday_id}' from HOLIDAYS table...")
     connection = pg2.connect(
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
@@ -149,11 +149,11 @@ def remove_holiday_DB(name):
 
         # Delete the holiday by name
         cursor.execute(f"""
-            DELETE FROM holidays WHERE name = %s;
-        """, (name,))
+            DELETE FROM holidays WHERE id = %s;
+        """, (holiday_id,))
 
         connection.commit()
-        logger.info(f"Holiday '{name}' removed successfully.")
+        logger.info(f"Holiday '{holiday_id}' removed successfully.")
 
     except Exception as e:
         # Handle specific errors
@@ -211,7 +211,7 @@ def fetch_holidays_by_date_DB(dd_mm):
                 users = json.loads(users)
 
             holidays.append({
-                'holiday_id': holiday_id,
+                'id': holiday_id,
                 "name": name,
                 "message": text,
                 "greeted_users": users
@@ -251,7 +251,7 @@ def fetch_all_holidays_DB():
 
         # Query to fetch all holidays
         cursor.execute("""
-            SELECT name, day, month, users, text
+            SELECT id, name, day, month, users, text
             FROM holidays;
         """)
 
@@ -259,10 +259,11 @@ def fetch_all_holidays_DB():
         rows = cursor.fetchall()
 
         holidays = []
-        for name, day, month, users, text in rows:
+        for holiday_id, name, day, month, users, text in rows:
             # Deserialize 'users' JSON if needed
             users = json.loads(users) if isinstance(users, str) else users
             holidays.append({
+                'id': holiday_id,
                 "name": name,
                 "day": day,
                 "month": month,
