@@ -60,99 +60,104 @@ async def start(message: Message) -> None:
 
 
 
-@dp.message(Command("register"))
-async def register(message: Message, state: FSMContext) -> None:
-    logger.info(f"User {message.from_user.id} triggered /register command.")
-    msg = textwrap.dedent((
-    "🚀 Hi there! To enable me to send messages from your account, I need your <b>API ID</b> and <b>API hash</b>. "
-    "Here's how you can get them:\n\n"
-    "1️⃣ <b>Log in</b> to your Telegram core: <a href='https://my.telegram.org'>Telegram Core</a>.\n"
-    "2️⃣ Navigate to <b>API development tools</b> and fill out the form.\n"
-    "3️⃣ Once completed, you will receive:\n"
-    "   - 🛠️ <b>API ID</b>\n"
-    "   - 🔑 <b>API Hash</b>\n\n"
-    "📥 <b>Please send me the credentials</b> in this format:\n"
-    "<b>API_ID API_HASH</b> (separated by a space).\n\n"
-    ))
-    await message.reply(msg)
-    await state.set_state(Form.tg_credentials)
+# @dp.message(Command("register"))
+# async def register(message: Message, state: FSMContext) -> None:
+#     logger.info(f"User {message.from_user.id} triggered /register command.")
+#     msg = textwrap.dedent((
+#     "🚀 Hi there! To enable me to send messages from your account, I need your <b>API ID</b> and <b>API hash</b>. "
+#     "Here's how you can get them:\n\n"
+#     "1️⃣ <b>Log in</b> to your Telegram core: <a href='https://my.telegram.org'>Telegram Core</a>.\n"
+#     "2️⃣ Navigate to <b>API development tools</b> and fill out the form.\n"
+#     "3️⃣ Once completed, you will receive:\n"
+#     "   - 🛠️ <b>API ID</b>\n"
+#     "   - 🔑 <b>API Hash</b>\n\n"
+#     "📥 <b>Please send me the credentials</b> in this format:\n"
+#     "<b>API_ID API_HASH</b> (separated by a space).\n\n"
+#     ))
+#     await message.reply(msg)
+#     await state.set_state(Form.tg_credentials)
 
 
-@dp.message(Form.tg_credentials)
-async def request_phone_number(message: Message, state: FSMContext) -> None:
-    logger.info(f"User {message.from_user.id} sent tg_credentials")
-    try:
-        api_id, api_hash = message.text.split()
-        api_id = int(api_id)
-        userpyrogram = user_account.UserPyrogram(api_id, api_hash, message.from_user.id)
-        await state.update_data(api_id=api_id, api_hash=api_hash, userpyrogram=userpyrogram)
-        await message.reply("Great! Now, please send me your phone number (with country code, e.g., +123456789).")
-        await state.set_state(Form.phone_number)
-    except Exception as e:
-        logger.error(f"User {message.from_user.id} entered invalid credentials. {e}")
-        await message.reply("Try again, use space as separator and enter API_ID as number!")
-        await state.set_state(Form.tg_credentials)
+# @dp.message(Form.tg_credentials)
+# async def request_phone_number(message: Message, state: FSMContext) -> None:
+#     logger.info(f"User {message.from_user.id} sent tg_credentials")
+#     try:
+#         api_id, api_hash = message.text.split()
+#         api_id = int(api_id)
+#         userpyrogram = user_account.UserPyrogram(api_id, api_hash, message.from_user.id)
+#         await state.update_data(api_id=api_id, api_hash=api_hash, userpyrogram=userpyrogram)
+#         await message.reply("Great! Now, please send me your phone number (with country code, e.g., +123456789).")
+#         await state.set_state(Form.phone_number)
+#     except Exception as e:
+#         logger.error(f"User {message.from_user.id} entered invalid credentials. {e}")
+#         await message.reply("Try again, use space as separator and enter API_ID as number!")
+#         await state.set_state(Form.tg_credentials)
 
 
-@dp.message(Form.phone_number)
-async def request_otp(message: Message, state: FSMContext) -> None:
-    logger.info(f"User {message.from_user.id} sent phone number")
-    try:
-        phone_number = message.text
-        data = await state.get_data()
-        userpyrogram = data.get("userpyrogram")
-        await userpyrogram.request_code(phone_number)
-        print('Code requested')
-        await state.update_data(phone_number=phone_number, userpyrogram=userpyrogram)
-        await message.reply("Thanks! Now, please send the OTP code you received.")
-        await state.set_state(Form.otp_code)
-    except Exception as e:
-        logger.error(f"Error while receiving phone number from User {message.from_user.id}. {e}")
-        await message.reply("Invalid phone number format. Please try again!")
-        await state.set_state(Form.phone_number)
+# @dp.message(Form.phone_number)
+# async def request_otp(message: Message, state: FSMContext) -> None:
+#     logger.info(f"User {message.from_user.id} sent phone number")
+#     try:
+#         phone_number = message.text
+#         data = await state.get_data()
+#         userpyrogram = data.get("userpyrogram")
+#         await userpyrogram.request_code(phone_number)
+#         await state.update_data(phone_number=phone_number, userpyrogram=userpyrogram)
+#         await message.reply("Thanks! Now, please send the OTP code you received.")
+#         await state.set_state(Form.otp_code)
+#     except Exception as e:
+#         logger.error(f"Error while receiving phone number from User {message.from_user.id}. {e}")
+#         await message.reply("Invalid phone number format. Please try again!")
+#         await state.set_state(Form.phone_number)
 
 
-@dp.message(Form.otp_code)
-async def register_user(message: Message, state: FSMContext) -> None:
-    logger.info(f"User {message.from_user.id} sent OTP code")
-    try:
-        otp_code = message.text
-        data = await state.get_data()
-        api_id = data.get("api_id")
-        api_hash = data.get("api_hash")
-        phone_number = data.get("phone_number")
-        userpyrogram = data.get("userpyrogram")
+# @dp.message(Form.otp_code)
+# async def register_user(message: Message, state: FSMContext) -> None:
+#     logger.info(f"User {message.from_user.id} sent OTP code")
+#     try:
+#         otp_code = message.text
+#         data = await state.get_data()
+#         api_id = data.get("api_id")
+#         api_hash = data.get("api_hash")
+#         phone_number = data.get("phone_number")
+#         userpyrogram = data.get("userpyrogram")
         
-        # Check if the user already exists
-        users_rows = get_all_users_DB()
-        registered_tg_ids = [row[1] for row in users_rows]
-        if message.from_user.id in registered_tg_ids:
-            logger.info(f"User {message.from_user.id} is being re-registered.")
-            remove_user_DB(message.from_user.id)
+#         # Check if the user already exists
+#         users_rows = get_all_users_DB()
+#         registered_tg_ids = [row[1] for row in users_rows]
+#         if message.from_user.id in registered_tg_ids:
+#             logger.info(f"User {message.from_user.id} is being re-registered.")
+#             remove_user_DB(message.from_user.id)
         
-        # Save user data in DB
-        add_user_DB(message.from_user.id, api_id, api_hash, phone_number)
-        logger.info(f"User {message.from_user.id} registered successfully.")
-        await message.reply(
-            "You have been registered successfully! "
-            "As a test, 'Hello!' will be sent to @BotFather from your account. "
-            "If the message hasn't been sent, "
-            "please check your credentials and try registering again."
-        )
-        # Send a test message to @BotFather
-        try:
-            await userpyrogram.enter_code(otp_code)
-            await userpyrogram.send_msg("@BotFather", "Hello!")
-        except Exception as e:
-            logger.error(f"An error occurred while sending a test message to @BotFather: {e}")
-            await message.reply("An error occurred while sending a test message to @BotFather. Please try again later.")
+#         # Save user data in DB
+#         add_user_DB(message.from_user.id, api_id, api_hash, phone_number)
+#         logger.info(f"User {message.from_user.id} registered successfully.")
 
-        # Reset the state after successful registration
-        await state.clear()
-    except Exception as e:
-        logger.error(f"User {message.from_user.id} encountered an error. {e}")
-        await message.reply("Something went wrong! Please try again.")
-        await state.set_state(Form.tg_credentials)
+#         # Send a test message to @BotFather
+#         try:
+#             await userpyrogram.enter_code(otp_code)
+#             await userpyrogram.send_msg("@BotFather", "Hello!")
+#             print('message sent')
+#         except Exception as e:
+#             logger.error(f"An error occurred while sending a test message to @BotFather: {e}")
+#             await message.reply("An error occurred while sending a test message to @BotFather. Please try again later.")
+#             await state.clear()
+#             print('message not sent')
+#             return
+
+#         await message.reply(
+#             "You have been registered successfully! "
+#             "As a test, 'Hello!' will be sent to @BotFather from your account. "
+#             "If the message hasn't been sent, "
+#             "please check your credentials and try registering again."
+#         )
+
+#         # Reset the state after successful registration
+#         await state.clear()
+#     except Exception as e:
+#         logger.error(f"User {message.from_user.id} encountered an error. {e}")
+#         await message.reply("Something went wrong! Please try again.")
+#         await state.set_state(Form.tg_credentials)
 
 
 

@@ -1,5 +1,0 @@
-aiogram
-python-dotenv
-pyrogram
-tgcrypto
-psycopg2-binary
