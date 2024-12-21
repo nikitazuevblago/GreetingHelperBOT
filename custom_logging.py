@@ -20,7 +20,6 @@ class PostgresHandler(logging.Handler):
         )
         self.connection.autocommit = True
 
-
     def emit(self, record):
         log_message = self.format(record)
         try:
@@ -33,7 +32,6 @@ class PostgresHandler(logging.Handler):
         except Exception as e:
             print(f"Failed to log message to PostgreSQL: {e}")
 
-
     def close(self):
         logger.info("Bot stopped")
         if self.connection:
@@ -44,7 +42,8 @@ class PostgresHandler(logging.Handler):
 # Initialize logging
 db_handler = PostgresHandler()
 db_handler.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s - %(message)s")  # Customize log format
+formatter = logging.Formatter(
+    "%(asctime)s - %(message)s")  # Customize log format
 db_handler.setFormatter(formatter)
 
 logger = logging.getLogger()
