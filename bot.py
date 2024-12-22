@@ -46,36 +46,51 @@ async def set_bot_commands(bot: Bot):
 
 @dp.message(Command("cancel"))
 async def cancel_process(message: Message, state: FSMContext):
-    if await state.get_state():  # Check if the user is in a state
-        await state.clear()  # Clear the FSM state
-        await message.reply("❌ <b>Process canceled!</b>", parse_mode="HTML")
+    if message.from_user.id != int(os.getenv("TELEGRAM_ID")):
+        logger.info(f"Unauthorized user {message.from_user.id} tried to cancel a process.")
+        await message.reply("❌ You are not authorized to use the bot", parse_mode="HTML")
+        return
     else:
-        await message.reply("ℹ️ No active process to cancel.", parse_mode="HTML")
+        if await state.get_state():  # Check if the user is in a state
+            await state.clear()  # Clear the FSM state
+            await message.reply("❌ <b>Process canceled!</b>", parse_mode="HTML")
+        else:
+            await message.reply("ℹ️ No active process to cancel.", parse_mode="HTML")
 
 
 
 # Handler for /start command
 @dp.message(CommandStart())
 async def start(message: Message) -> None:
-    logger.info(f"User triggered /start command.")
-    msg = textwrap.dedent((
-    "🎉 Hi there! I’m your friendly bot 🤖, here to make your life easier by "
-    "sending heartfelt holiday greetings directly from your account. Let me "
-    "help you spread joy and celebrate all the special moments! 🥳🎁\n"
-    "<i>P.S. The mailing will be scheduled for 10 AM</i>"))
+    if message.from_user.id != int(os.getenv("TELEGRAM_ID")):
+        logger.info(f"Unauthorized user {message.from_user.id} tried to cancel a process.")
+        await message.reply("❌ You are not authorized to use the bot", parse_mode="HTML")
+        return
+    else:
+        logger.info(f"User triggered /start command.")
+        msg = textwrap.dedent((
+        "🎉 Hi there! I’m your friendly bot 🤖, here to make your life easier by "
+        "sending heartfelt holiday greetings directly from your account. Let me "
+        "help you spread joy and celebrate all the special moments! 🥳🎁\n"
+        "<i>P.S. The mailing will be scheduled for 10 AM</i>"))
 
-    await message.reply(msg)
+        await message.reply(msg)
 
 
 # Start the /add_holiday process
 @dp.message(Command("add_holiday"))
 async def add_holiday_start(message: Message, state: FSMContext):
-    await message.reply(
-        "🎉 <b>Let's add a new holiday!</b>\n\n"
-        "Please enter the <b>name of the holiday</b> (e.g., International Friendship Day):",
-        parse_mode="HTML"
-    )
-    await state.set_state(Form.holiday_name)
+    if message.from_user.id != int(os.getenv("TELEGRAM_ID")):
+        logger.info(f"Unauthorized user {message.from_user.id} tried to use bot")
+        await message.reply("❌ You are not authorized to use the bot", parse_mode="HTML")
+        return
+    else:
+        await message.reply(
+            "🎉 <b>Let's add a new holiday!</b>\n\n"
+            "Please enter the <b>name of the holiday</b> (e.g., International Friendship Day):",
+            parse_mode="HTML"
+        )
+        await state.set_state(Form.holiday_name)
 
 
 # Get the holiday name
@@ -229,26 +244,31 @@ async def send_holiday_greetings():
 
 @dp.message(Command("remove_holiday"))
 async def remove_holiday_command(message: Message):
-    holidays = fetch_all_holidays_DB()  # Fetch holidays from the database
-    if not holidays:
-        await message.answer("No holidays found.")
+    if message.from_user.id != int(os.getenv("TELEGRAM_ID")):
+        logger.info(f"Unauthorized user {message.from_user.id} tried to use bot")
+        await message.reply("❌ You are not authorized to use the bot", parse_mode="HTML")
         return
+    else:
+        holidays = fetch_all_holidays_DB()  # Fetch holidays from the database
+        if not holidays:
+            await message.answer("No holidays found.")
+            return
 
-    # Create an inline keyboard with holiday IDs in callback data
-    builder = InlineKeyboardBuilder()
-    for holiday in holidays:
-        builder.button(
-            text=f"❌ {holiday['name']} ({holiday['day']}/{holiday['month']})",
-            callback_data=f"toggle_holiday:{holiday['id']}"  # Use holiday ID
+        # Create an inline keyboard with holiday IDs in callback data
+        builder = InlineKeyboardBuilder()
+        for holiday in holidays:
+            builder.button(
+                text=f"❌ {holiday['name']} ({holiday['day']}/{holiday['month']})",
+                callback_data=f"toggle_holiday:{holiday['id']}"  # Use holiday ID
+            )
+        builder.button(text="✅ Confirm Deletion", callback_data="confirm_deletion:")
+        builder.adjust(1)  # One button per row
+
+        # Attach a temporary storage attribute to the message for selections
+        await message.answer(
+            "Select the holidays you want to remove (toggle with buttons):",
+            reply_markup=builder.as_markup()
         )
-    builder.button(text="✅ Confirm Deletion", callback_data="confirm_deletion:")
-    builder.adjust(1)  # One button per row
-
-    # Attach a temporary storage attribute to the message for selections
-    await message.answer(
-        "Select the holidays you want to remove (toggle with buttons):",
-        reply_markup=builder.as_markup()
-    )
 
 
 @dp.callback_query()
