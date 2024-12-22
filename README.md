@@ -7,8 +7,11 @@ Used it because I'm tired of sending the same "Happy new year" to all of the fri
 Digital Ocean Droplet - postgreSQL and telegram bot as docker images.
 Check it out in telegram - @GreetingHelperBOT
 
-### docker command:
+### docker commands to host yourself:
+```bash
+docker pull ghcr.io/nikitazuevblago/greetinghelperbot:latest
 docker run -d --name greetinghelperbot --restart=always -e TZ="CET" ghcr.io/nikitazuevblago/greetinghelperbot:latest
+```
 
 ## Installation and Setup 
 ```bash
