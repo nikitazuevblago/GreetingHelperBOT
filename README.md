@@ -1,7 +1,7 @@
 # GreetingHelperBOT
 
 ## Intro
-Used it because I'm tired of sending the same "Happy new year" to all of the friends/relatives and sometimes I even forget about it. That's why this bot helps you to configure the mailing for custom holidays.
+Created it because I'm tired of sending the same "Happy new year" to all of the friends/relatives and sometimes I even forget about it. That's why this bot helps you to configure the mailing for custom holidays.
 
 ## Deployment 
 Digital Ocean Droplet - postgreSQL and telegram bot as docker images.
