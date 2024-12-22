@@ -28,7 +28,7 @@ python bot.py
 * pyrogram
 
 ## File structure
-bot.py - bot structure
-db_interaction.py - interaction with database
-custom_logging.py - configured logger
-user_account.py - interacting on telegram user behalf
+* bot.py - bot structure
+* db_interaction.py - interaction with database
+* custom_logging.py - configured logger
+* user_account.py - interacting on telegram user behalf
