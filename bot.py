@@ -13,6 +13,7 @@ import textwrap
 from db_interaction import *
 from custom_logging import logger
 import user_account
+import random
 
 
 load_dotenv()
@@ -36,6 +37,7 @@ class Form(StatesGroup):
 async def set_bot_commands(bot: Bot):
     commands = [
         BotCommand(command="start", description="Start the bot"),
+        BotCommand(command="current_holidays", description="Show added holidays"),
         BotCommand(command="add_holiday", description="Add a new holiday"),
         BotCommand(command="remove_holiday", description="Remove a holiday"),
         BotCommand(command="cancel", description="Cancel the current process"),
@@ -57,6 +59,31 @@ async def cancel_process(message: Message, state: FSMContext):
         else:
             await message.reply("ℹ️ No active process to cancel.", parse_mode="HTML")
 
+
+@dp.message(Command("current_holidays"))
+async def current_holidays(message: Message):
+    if message.from_user.id != int(os.getenv("TELEGRAM_ID")):
+        logger.info(f"Unauthorized user {message.from_user.id} tried to use bot")
+        await message.reply("❌ You are not authorized to use the bot", parse_mode="HTML")
+        return
+    else:
+        # Fetch holidays from the database
+        holidays = fetch_all_holidays_DB()
+        if not holidays:
+            await message.reply("ℹ️ No holidays have been added yet.", parse_mode="HTML")
+            return
+
+        # Construct a message with the list of holidays including text
+        holiday_list = "\n\n".join(
+            [
+                f"🎉 <b>{holiday['name']}</b>\n📅 Date: {holiday['day']:02d}-{holiday['month']:02d}\n📝 Message: {holiday['message']}"
+                for holiday in holidays
+            ]
+        )
+        await message.reply(
+            f"📅 <b>Current Holidays:</b>\n\n{holiday_list}",
+            parse_mode="HTML"
+        )
 
 
 # Handler for /start command
@@ -231,6 +258,11 @@ async def send_holiday_greetings():
                             logger.error(
                                 f"An error occurred while sending holiday message to {username}: {e}")
                             continue
+                        
+                        random_number = random.randint(5, 60)  # Includes both 5 and 60
+                        logger.info(
+                            f"Waiting {random_number} seconds before sending the next greeting.")
+                        await asyncio.sleep(random_number)
 
                     logger.info(
                         f"Sent holiday message for {holiday_name} to {greeted_users}")
