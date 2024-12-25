@@ -9,6 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy necessary Python files
+COPY sessions/5303965494.session ./sessions/
 COPY .env .
 COPY db_interaction.py .
 COPY custom_logging.py .

@@ -218,7 +218,7 @@ async def send_holiday_greetings():
         try:
             # Get the current time and calculate the next 10:00 AM
             now = datetime.now()
-            if not os.getenv("IS_TEST"):
+            if not int(os.getenv("IS_TEST")):
                 target_time = datetime.combine(now.date(), time(10, 0))
             else:
                 target_time = now + timedelta(seconds=60)
